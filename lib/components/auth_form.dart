@@ -24,7 +24,13 @@ class AuthForm extends StatelessWidget {
               ),
               SizedBox(height: 12),
 
-              ElevatedButton(onPressed: () {}, child: Text('Entrar')
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  
+                ),
+                child: Text('Entrar'), 
               ),
               TextButton(onPressed: () {}, child: Text('Você já possui conta?'))
             ],
