@@ -9,7 +9,7 @@ class AuthForm extends StatefulWidget {
 }
 
 class _AuthFormState extends State<AuthForm> {
-  final formKay = GlobalKey<FormState>();
+  final formKey = GlobalKey<FormState>();
   final formData = AuthFormData();
 
   void _submit() {
