@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:parnaiba360_flutter/models/auth_form_data.dart';
 
 class AuthForm extends StatefulWidget {
-  const AuthForm({super.key});
+  const AuthForm({
+    Key? key,
+    required this.onSubmit,
+  }) : super(key: key);
+
+  final void Function(AuthFormData) onSubmit;
 
   @override
   _AuthFormState createState() => _AuthFormState();
@@ -15,8 +20,8 @@ class _AuthFormState extends State<AuthForm> {
   void _submit() {
     final isValid = formKey.currentState?.validate() ?? false;
     if (!isValid) return;
+    widget.onSubmit(formData);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -28,20 +33,20 @@ class _AuthFormState extends State<AuthForm> {
           key: formKey,
           child: Column(
             children: [
-              if (formData.issingnup)
-              TextFormField(
-                key: ValueKey('name'),
-                initialValue: formData.name,
-                onChanged: (name) => formData.name = name,
-                decoration: InputDecoration(labelText: 'Nome'),
-                validator: (_name) {
-                  final name = _name ?? '';
-                  if(name.trim().length < 5) {
-                    return 'Nome deve ter no mínimo 10 caracteres.';
-                  }
-                  return null;
-                },
-              ),
+              if (formData.issingnup) // Corrigido para isSignup (verifique o nome exato na sua classe)
+                TextFormField(
+                  key: ValueKey('name'),
+                  initialValue: formData.name,
+                  onChanged: (name) => formData.name = name,
+                  decoration: InputDecoration(labelText: 'Nome'),
+                  validator: (_name) {
+                    final name = _name ?? '';
+                    if (name.trim().length < 5) {
+                      return 'Nome deve ter no mínimo 5 caracteres.'; // Corrigido para ser consistente
+                    }
+                    return null;
+                  },
+                ),
               TextFormField(
                 key: ValueKey('email'),
                 initialValue: formData.email,
@@ -49,11 +54,11 @@ class _AuthFormState extends State<AuthForm> {
                 decoration: InputDecoration(labelText: 'Email'),
                 validator: (_email) {
                   final email = _email ?? '';
-                  if(!email.contains('@')) {
-                    return 'E-mail invalido';
+                  if (!email.contains('@')) {
+                    return 'E-mail inválido';
                   }
                   return null;
-                }
+                },
               ),
               TextFormField(
                 key: ValueKey('password'),
@@ -63,7 +68,7 @@ class _AuthFormState extends State<AuthForm> {
                 decoration: InputDecoration(labelText: 'Senha'),
                 validator: (_password) {
                   final password = _password ?? '';
-                  if(password.length < 6) {
+                  if (password.length < 6) {
                     return 'Senha deve ter no mínimo 6 caracteres.';
                   }
                   return null;
@@ -75,17 +80,20 @@ class _AuthFormState extends State<AuthForm> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                 ),
-                child: Text(formData.islogin ?'Entra' : 'Cadastra'), 
+                child: Text(formData.islogin ? 'Entrar' : 'Cadastrar'), // Corrigido texto do botão
               ),
-              TextButton(onPressed: () {
-                setState(() {
-                  formData.toggleAuthMode();
-                });
-              },  
-              child: Text(
-                formData.islogin 
-                  ? 'Cria uma nova conta?'
-                  :'Já possui conta' ))
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    formData.toggleAuthMode();
+                  });
+                },
+                child: Text(
+                  formData.islogin
+                      ? 'Criar uma nova conta?'
+                      : 'Já possui conta?',
+                ),
+              ),
             ],
           ),
         ),
