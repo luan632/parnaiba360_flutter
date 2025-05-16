@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UserImagePicker extends StatefulWidget {
-  final void Function(FileImage) onImagePick;
+  final void Function(File image) onImagePick;
 
   const UserImagePicker({
     Key? key,
@@ -21,6 +21,21 @@ class _UserImagePickerState extends State<UserImagePicker> {
           radius: 40,
           backgroundColor: Colors.grey,
         )
+        TextButton(
+          onPressed: () {},
+         child: Row(
+          children: [
+            Icon(
+              
+              Icons.image,
+              color: Theme.of(context).primaryColor,
+            
+            
+            ),
+
+          ],
+         ),
+        ),
       ],
     );
   }

@@ -20,10 +20,8 @@ class _AuthFormState extends State<AuthForm> {
   final formKey = GlobalKey<FormState>();
   final _formData = AuthFormData();
 
-  void handleImagePick(File image) {
-    setState(() {
-      _formData.image = image;
-    });
+  void _handleImagePick(File image) {
+    _formData.image = image;
   }
 
   void _showError(String msg) {
