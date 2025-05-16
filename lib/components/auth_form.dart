@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:parnaiba360_flutter/components/user_image_picker.dart';
 import 'package:parnaiba360_flutter/models/auth_form_data.dart';
 
 class AuthForm extends StatefulWidget {
@@ -15,12 +18,32 @@ class AuthForm extends StatefulWidget {
 
 class _AuthFormState extends State<AuthForm> {
   final formKey = GlobalKey<FormState>();
-  final formData = AuthFormData();
+  final _formData = AuthFormData();
+
+  void handleImagePick(File image) {
+    setState(() {
+      _formData.image = image;
+    });
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
 
   void _submit() {
     final isValid = formKey.currentState?.validate() ?? false;
     if (!isValid) return;
-    widget.onSubmit(formData);
+
+    if (_formData.image == null && _formData.issingnup) {
+      return _showError('Imagem Não Selecionada!');
+    }
+
+    widget.onSubmit(_formData);
   }
 
   @override
@@ -33,25 +56,29 @@ class _AuthFormState extends State<AuthForm> {
           key: formKey,
           child: Column(
             children: [
-              if (formData.issingnup) // Corrigido para isSignup (verifique o nome exato na sua classe)
+              if (_formData.issingnup)
+                UserImagePicker(
+                  onImagePick: _handleImagePick,
+                ),
+              if (_formData.issingnup)
                 TextFormField(
-                  key: ValueKey('name'),
-                  initialValue: formData.name,
-                  onChanged: (name) => formData.name = name,
-                  decoration: InputDecoration(labelText: 'Nome'),
+                  key: const ValueKey('name'),
+                  initialValue: _formData.name,
+                  onChanged: (name) => _formData.name = name,
+                  decoration: const InputDecoration(labelText: 'Nome'),
                   validator: (_name) {
                     final name = _name ?? '';
                     if (name.trim().length < 5) {
-                      return 'Nome deve ter no mínimo 5 caracteres.'; // Corrigido para ser consistente
+                      return 'Nome deve ter no mínimo 5 caracteres.';
                     }
                     return null;
                   },
                 ),
               TextFormField(
-                key: ValueKey('email'),
-                initialValue: formData.email,
-                onChanged: (email) => formData.email = email,
-                decoration: InputDecoration(labelText: 'Email'),
+                key: const ValueKey('email'),
+                initialValue: _formData.email,
+                onChanged: (email) => _formData.email = email,
+                decoration: const InputDecoration(labelText: 'Email'),
                 validator: (_email) {
                   final email = _email ?? '';
                   if (!email.contains('@')) {
@@ -61,11 +88,11 @@ class _AuthFormState extends State<AuthForm> {
                 },
               ),
               TextFormField(
-                key: ValueKey('password'),
-                initialValue: formData.password,
-                onChanged: (password) => formData.password = password,
+                key: const ValueKey('password'),
+                initialValue: _formData.password,
+                onChanged: (password) => _formData.password = password,
                 obscureText: true,
-                decoration: InputDecoration(labelText: 'Senha'),
+                decoration: const InputDecoration(labelText: 'Senha'),
                 validator: (_password) {
                   final password = _password ?? '';
                   if (password.length < 6) {
@@ -74,22 +101,22 @@ class _AuthFormState extends State<AuthForm> {
                   return null;
                 },
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                 ),
-                child: Text(formData.islogin ? 'Entrar' : 'Cadastrar'), // Corrigido texto do botão
+                child: Text(_formData.islogin ? 'Entrar' : 'Cadastrar'),
               ),
               TextButton(
                 onPressed: () {
                   setState(() {
-                    formData.toggleAuthMode();
+                    _formData.toggleAuthMode();
                   });
                 },
                 child: Text(
-                  formData.islogin
+                  _formData.islogin
                       ? 'Criar uma nova conta?'
                       : 'Já possui conta?',
                 ),
