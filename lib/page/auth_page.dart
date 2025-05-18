@@ -12,13 +12,27 @@ class AuthPage extends StatefulWidget {
 class _AuthPageState extends State<AuthPage> {
   bool _isLoading = false;
 
-  void handleSubmit(AuthFormData formData) {
-    setState(() => _isLoading = true);
+  Future <void> _handleSubmit(AuthFormData formData) async {
+    try {
+     setState(() => _isLoading = true); 
+     
+     if(formData.islogin) {
+       //login
+     }else {
+      //signup
+     }
     
-    print('AuthPage...');
-    print(formData.email);
+    } catch(error) {
 
-    setState(() => _isLoading = false);
+      //tratar o erro!
+    }finally {
+     setState(() => _isLoading = false); 
+    }
+    
+    
+    //print('AuthPage...');
+    //print(formData.email);
+
   }
 
   @override
@@ -29,7 +43,7 @@ class _AuthPageState extends State<AuthPage> {
         children: [
           Center(
             child: SingleChildScrollView(
-              child: AuthForm(onSubmit: handleSubmit),
+              child: AuthForm(onSubmit: _handleSubmit),
             ),
           ),
           if (_isLoading)Container(
