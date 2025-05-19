@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:parnaiba360_flutter/components/auth_form.dart';
 import 'package:parnaiba360_flutter/core/models/auth_form_data.dart';
+import 'package:parnaiba360_flutter/core/service/auth/auth_mock_service.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -18,8 +19,19 @@ class _AuthPageState extends State<AuthPage> {
      
      if(formData.islogin) {
        //login
-     }else {
+       await AuthMockService().login(
+        formData.email,
+        formData.password
+        );
+      } else {
       //signup
+      print('signup');
+      await AuthMockService().signup(
+        formData.name,
+        formData.email,
+        formData.password,
+        formData.image,
+      );
      }
     
     } catch(error) {
