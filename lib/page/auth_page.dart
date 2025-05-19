@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:parnaiba360_flutter/components/auth_form.dart';
-import 'package:parnaiba360_flutter/models/auth_form_data.dart';
+import 'package:parnaiba360_flutter/core/models/auth_form_data.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});

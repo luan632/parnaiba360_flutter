@@ -1,8 +1,7 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:parnaiba360_flutter/components/user_image_picker.dart';
-import 'package:parnaiba360_flutter/models/auth_form_data.dart';
+import 'package:parnaiba360_flutter/core/models/auth_form_data.dart';
 
 class AuthForm extends StatefulWidget {
   const AuthForm({
