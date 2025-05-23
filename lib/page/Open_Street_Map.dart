@@ -113,6 +113,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                 value: 'Restaurante',
                 child: Text('Restaurantes'),
               ),
+              
             ],
           ),
         ],
