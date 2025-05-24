@@ -5,6 +5,7 @@ import 'package:parnaiba360_flutter/core/models/chat_user.dart';
 import 'package:parnaiba360_flutter/core/service/auth/auth_service.dart';
 
 class AuthMockService implements AuthService {
+  static final AuthMockService _instance = AuthMockService._();
   static Map<String, ChatUser> _users = {};
   static ChatUser? _currentUser;
   static MultiStreamController<ChatUser?>? _controller;
@@ -13,21 +14,23 @@ class AuthMockService implements AuthService {
     _updateUser(null);
   });
 
-
-  ChatUser? get currentUser {
-    return _currentUser;
+  // Padrão singleton
+  factory AuthMockService() {
+    return _instance;
   }
 
-  Stream<ChatUser?> get userChanges {
-    return _userStream;
-  }
+  AuthMockService._();
+
+  ChatUser? get currentUser => _currentUser;
+
+  Stream<ChatUser?> get userChanges => _userStream;
 
   Future<void> signup(
     String name,
     String email,
     String password,
-    File? image
-  ) async{
+    File? image,
+  ) async {
     final newUser = ChatUser(
       id: Random().nextDouble().toString(), 
       name: name,
@@ -35,23 +38,20 @@ class AuthMockService implements AuthService {
       imageURL: image?.path ?? '/assets/images/...',
     );
 
-    _users.putIfAbsent(email,() => newUser);
+    _users.putIfAbsent(email, () => newUser);
     _updateUser(newUser);
   }
 
-  Future<void> login(
-  String email,
-  String password
-  )async{
-  _updateUser (_users[email]);
+  Future<void> login(String email, String password) async {
+    _updateUser(_users[email]);
   }
 
-  Future<void> logout() async{
+  Future<void> logout() async {
     _updateUser(null);
   }
 
   static void _updateUser(ChatUser? user) {
-     _currentUser = user;
+    _currentUser = user;
     _controller?.add(_currentUser);
   }
 }

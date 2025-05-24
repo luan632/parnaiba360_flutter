@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:parnaiba360_flutter/core/service/auth/auth_service.dart';
+import 'package:parnaiba360_flutter/core/service/auth/auth_mock_service.dart';
 
 class OpenStreetMap extends StatefulWidget {
   const OpenStreetMap({super.key});
@@ -14,30 +16,27 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
   final MapController _mapController = MapController();
   final LatLng parnaibaLocation = const LatLng(-2.9038, -41.7767);
   String selectedFilter = 'Todos';
+  final AuthService _authService = AuthMockService();
 
-  // Lista de pontos turísticos com nome e coordenadas
+  // Lista de pontos turísticos
   final List<Map<String, dynamic>> pontosTuristicos = [
-  {'nome': "Praça Mandu Ladino", 'lat': -2.902957, 'lng': -41.768434},
-  {'nome': "Parnaíba Shopping", 'lat': -2.909734, 'lng': -41.746951},
-  {'nome': "Praia Pedra do Sal", 'lat': -2.816892, 'lng': -41.728505},
-  {'nome': "Lagoa do Portinho", 'lat': -2.963750, 'lng': -41.683123},
-  // Adicione mais pontos turísticos aqui
-];
+    {'nome': "Praça Mandu Ladino", 'lat': -2.902957, 'lng': -41.768434},
+    {'nome': "Parnaíba Shopping", 'lat': -2.909734, 'lng': -41.746951},
+    {'nome': "Praia Pedra do Sal", 'lat': -2.816892, 'lng': -41.728505},
+    {'nome': "Lagoa do Portinho", 'lat': -2.963750, 'lng': -41.683123},
+  ];
 
-  // Lista de hotéis com nome e coordenadas
+  // Lista de hotéis
   final List<Map<String, dynamic>> hoteis = [
     {'nome': 'Citi Executivo Hotel', 'lat': -2.913962, 'lng': -41.753847},
     {'nome': 'Hotel Portal dos Ventos', 'lat': -2.908528, 'lng': -41.752094},
-    // Adicione mais hotéis aqui
   ];
 
-  // Lista de restaurantes com nome e coordenadas
+  // Lista de restaurantes
   final List<Map<String, dynamic>> restaurantes = [
     {'nome': 'Restaurante 1', 'lat': -2.910237, 'lng': -41.744985},
-    // Adicione mais restaurantes aqui
   ];
 
-  // Método para gerar marcadores a partir de uma lista
   List<Map<String, dynamic>> _generateMarkers(
       List<Map<String, dynamic>> locations, String type, Color color) {
     return locations.map((location) {
@@ -59,7 +58,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
     }).toList();
   }
 
-  // Método para obter todos os marcadores filtrados
   List<Marker> getFilteredMarkers() {
     List<Map<String, dynamic>> allMarkers = [];
     
@@ -79,9 +77,41 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
 
   void _applyFilter(String? filter) {
     if (filter != null) {
-      setState(() {
-        selectedFilter = filter;
-      });
+      if (filter == 'Sair') {
+        _confirmLogout(context);
+      } else {
+        setState(() {
+          selectedFilter = filter;
+        });
+      }
+    }
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Logout'),
+        content: const Text('Deseja realmente sair da sua conta?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sair', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _authService.logout();
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/login',
+        (Route<dynamic> route) => false,
+      );
     }
   }
 
@@ -93,7 +123,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
         title: const Text('Parnaiba360'),
         backgroundColor: Colors.blue,
         actions: [
-          // Menu popup para seleção de filtros
           PopupMenuButton<String>(
             onSelected: _applyFilter,
             itemBuilder: (context) => [
@@ -113,28 +142,28 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                 value: 'Restaurante',
                 child: Text('Restaurantes'),
               ),
-              
+              const PopupMenuItem(
+                value: 'Sair',
+                child: Text('Sair', style: TextStyle(color: Colors.red)),
+              ),
             ],
           ),
         ],
       ),
       body: Stack(
         children: [
-          // Widget principal do mapa FlutterMap
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              center: parnaibaLocation, // Centro inicial do mapa
-              zoom: 13, // Zoom inicial
+              center: parnaibaLocation,
+              zoom: 13,
               minZoom: 0,
               maxZoom: 100,
             ),
             children: [
-              // Camada de tiles do OpenStreetMap
               TileLayer(
                 urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", 
               ),
-              // Camada que mostra a localização atual do usuário
               CurrentLocationLayer(
                 style: const LocationMarkerStyle(
                   marker: DefaultLocationMarker(
@@ -147,13 +176,11 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                   markerDirection: MarkerDirection.heading,
                 ),
               ),
-              // Camada de marcadores (filtrada)
               MarkerLayer(markers: getFilteredMarkers()),
             ],
           ),
         ],
       ),
-      // Botão para centralizar o mapa na localização de Parnaíba
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _mapController.move(parnaibaLocation, 13);
