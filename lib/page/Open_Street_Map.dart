@@ -91,7 +91,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar Logout'),
+        title: const Text('Confirmar Saida'),
         content: const Text('Deseja realmente sair da sua conta?'),
         actions: [
           TextButton(

@@ -45,7 +45,7 @@ class _AuthPageState extends State<AuthPage> {
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/images/praia.jpg'),
+                image: AssetImage('assets/images/praia.jpeg'),
                 fit: BoxFit.cover,
               ),
             ),
