@@ -13,59 +13,61 @@ class AuthPage extends StatefulWidget {
 class _AuthPageState extends State<AuthPage> {
   bool _isLoading = false;
 
-  Future <void> _handleSubmit(AuthFormData formData) async {
+  Future<void> _handleSubmit(AuthFormData formData) async {
     try {
-     setState(() => _isLoading = true); 
-     
-     if(formData.islogin) {
-       //login
-       await AuthMockService().login(
-        formData.email,
-        formData.password
-        );
+      setState(() => _isLoading = true);
+
+      if (formData.islogin) {
+        // login
+        await AuthMockService().login(formData.email, formData.password);
       } else {
-      //signup
-      print('signup');
-      await AuthMockService().signup(
-        formData.name,
-        formData.email,
-        formData.password,
-        formData.image,
-      );
-     }
-    
-    } catch(error) {
-
-      //tratar o erro!
-    }finally {
-     setState(() => _isLoading = false); 
+        // signup
+        await AuthMockService().signup(
+          formData.name,
+          formData.email,
+          formData.password,
+          formData.image,
+        );
+      }
+    } catch (error) {
+      // Tratar erro aqui
+    } finally {
+      setState(() => _isLoading = false);
     }
-    
-    
-    //print('AuthPage...');
-    //print(formData.email);
-
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
       body: Stack(
         children: [
+          // Imagem de fundo
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/praia.jpg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          // Conteúdo centralizado sobre a imagem
           Center(
             child: SingleChildScrollView(
               child: AuthForm(onSubmit: _handleSubmit),
             ),
           ),
-          if (_isLoading)Container(
-             decoration: BoxDecoration(
-              color: Color.fromRGBO(0, 0, 0, 0.5),
-             ),
-            child: Center(
-              child: CircularProgressIndicator(),
+
+          // Overlay de carregamento
+          if (_isLoading)
+            Container(
+              decoration: BoxDecoration(
+                color: Color.fromRGBO(0, 0, 0, 0.5),
               ),
-          ),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
         ],
       ),
     );
