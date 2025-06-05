@@ -4,6 +4,8 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:parnaiba360_flutter/core/service/auth/auth_service.dart';
 import 'package:parnaiba360_flutter/core/service/auth/auth_mock_service.dart';
+import 'package:parnaiba360_flutter/core/models/pontos_turisticos.dart';
+import 'package:parnaiba360_flutter/core/service/api_services.dart';
 
 class OpenStreetMap extends StatefulWidget {
   const OpenStreetMap({super.key});
