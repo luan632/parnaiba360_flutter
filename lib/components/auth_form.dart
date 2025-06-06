@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:parnaiba360_flutter/components/user_image_picker.dart';
 import 'package:parnaiba360_flutter/core/models/auth_form_data.dart';
 
@@ -18,6 +20,7 @@ class AuthForm extends StatefulWidget {
 class _AuthFormState extends State<AuthForm> {
   final formKey = GlobalKey<FormState>();
   final _formData = AuthFormData();
+  bool _isLoading = false; // Adicionado para controlar o estado de carregamento
 
   void _handleImagePick(File image) {
     _formData.image = image;
@@ -32,7 +35,7 @@ class _AuthFormState extends State<AuthForm> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async { // Modificado para ser assíncrono
     final isValid = formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
@@ -40,7 +43,48 @@ class _AuthFormState extends State<AuthForm> {
       return _showError('Imagem Não Selecionada!');
     }
 
-    widget.onSubmit(_formData);
+    setState(() {
+      _isLoading = true; // Ativa o indicador de carregamento
+    });
+
+    try {
+      // URL da sua API - substitua pela sua URL real
+      final url = Uri.parse(
+        _formData.islogin
+            ? 'http://127.0.0.1:8000/api/login'
+            : 'http://127.0.0.1:8000/api/register',
+      );
+
+      // Criando o corpo da requisição
+      final requestBody = {
+        'email': _formData.email,
+        'password': _formData.password,
+        if (_formData.issingnup) 'name': _formData.name,
+      };
+
+      // Fazendo a chamada à API
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Se a API retornar sucesso
+        widget.onSubmit(_formData); // Chama a função de callback
+      } else {
+        // Se houver erro na API
+        _showError(responseData['message'] ?? 'Erro na autenticação');
+      }
+    } catch (error) {
+      _showError('Erro de conexão: $error');
+    } finally {
+      setState(() {
+        _isLoading = false; // Desativa o indicador de carregamento
+      });
+    }
   }
 
   @override
@@ -100,18 +144,22 @@ class _AuthFormState extends State<AuthForm> {
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: _submit,
+                onPressed: _isLoading ? null : _submit, // Desabilita o botão durante o carregamento
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                 ),
-                child: Text(_formData.islogin ? 'Entrar' : 'Cadastrar'),
+                child: _isLoading
+                    ? const CircularProgressIndicator() // Mostra um spinner durante o carregamento
+                    : Text(_formData.islogin ? 'Entrar' : 'Cadastrar'),
               ),
               TextButton(
-                onPressed: () {
-                  setState(() {
-                    _formData.toggleAuthMode();
-                  });
-                },
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        setState(() {
+                          _formData.toggleAuthMode();
+                        });
+                      },
                 child: Text(
                   _formData.islogin
                       ? 'Criar uma nova conta?'

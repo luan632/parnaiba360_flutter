@@ -19,8 +19,13 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
   final LatLng parnaibaLocation = const LatLng(-2.9038, -41.7767);
   String selectedFilter = 'Todos';
   final AuthService _authService = AuthMockService();
-
+  late Future<List<PontosTuristicos>> futurePontos;
   // Lista de pontos turísticos
+  void initState() {
+    super.initState();
+    futurePontos = ApiServices().getPontos(); 
+  }
+  
   final List<Map<String, dynamic>> pontosTuristicos = [
     {'nome': "Praça Mandu Ladino", 'lat': -2.902957, 'lng': -41.768434},
     {'nome': "Parnaíba Shopping", 'lat': -2.909734, 'lng': -41.746951},

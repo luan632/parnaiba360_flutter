@@ -17,6 +17,8 @@ class AuthFormData {
     return mode_ == AuthMode.signup;
   }
 
+  get currentState => null;
+
   void toggleAuthMode(){
     mode_ = islogin ? AuthMode.signup : AuthMode.login; 
 
