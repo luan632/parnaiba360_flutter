@@ -22,7 +22,13 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
   late Future<List<PontosTuristicos>> futurePontos;
 
 
-  
+    final List<Map<String, dynamic>> hotel = [
+      {'nome': 'Hotel Exemplo', 'lat': -2.9038, 'lng': -41.7767},
+    ];
+
+    final List<Map<String, dynamic>> restaurant = [
+    {'nome': 'Restaurante Exemplo', 'lat': -2.9040, 'lng': -41.7770},
+    ];
 
   @override
   void initState() {
@@ -37,12 +43,10 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       Color markerColor;
 
       switch (ponto.tipo.toLowerCase()) {
-        case 'turistico':
         case 'turístico':
           iconData = Icons.location_on;
           markerColor = Colors.orange;
           break;
-        case 'historico':
         case 'histórico':
           iconData = Icons.location_city;
           markerColor = Colors.brown;
@@ -64,7 +68,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
         'type': ponto.tipo,
         'nome': ponto.nome,
         'marker': Marker(
-          point: LatLng(double.parse(ponto.latitude), double.parse(ponto.longitude)
+          point: LatLng((ponto.latitude), (ponto.longitude)
           ),
           builder: (_) => Icon(iconData, color: markerColor, size: 30),
         ),
@@ -99,8 +103,8 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
     List<Map<String, dynamic>> allMarkers = [];
 
     allMarkers.addAll(_generateMarkersFromApi(apiPoints));
-    allMarkers.addAll(_generateStaticMarkers(hoteis, 'hotel', Colors.blue));
-    allMarkers.addAll(_generateStaticMarkers(restaurantes, 'restaurante', Colors.green));
+    allMarkers.addAll(_generateStaticMarkers(hotel, 'hotel', Colors.blue));
+    allMarkers.addAll(_generateStaticMarkers(restaurant, 'restaurante', Colors.green));
 
     if (selectedFilter == 'Todos') {
       return allMarkers.map((m) => m['marker'] as Marker).toList();
