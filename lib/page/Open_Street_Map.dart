@@ -16,67 +16,99 @@ class OpenStreetMap extends StatefulWidget {
 
 class _OpenStreetMapState extends State<OpenStreetMap> {
   final MapController _mapController = MapController();
-  final LatLng parnaibaLocation = const LatLng(-2.9038, -41.7767);
+  final LatLng parnaibaLocation = LatLng(-2.9038, -41.7767);
   String selectedFilter = 'Todos';
   final AuthService _authService = AuthMockService();
   late Future<List<PontosTuristicos>> futurePontos;
-  // Lista de pontos turísticos
+
+
+  
+
+  @override
   void initState() {
     super.initState();
-    futurePontos = ApiServices().getPontos(); 
+    futurePontos = ApiServices().getPontos(); // Carrega pontos turísticos da API
   }
-  
-  final List<Map<String, dynamic>> pontosTuristicos = [
-    {'nome': "Praça Mandu Ladino", 'lat': -2.902957, 'lng': -41.768434},
-    {'nome': "Parnaíba Shopping", 'lat': -2.909734, 'lng': -41.746951},
-    {'nome': "Praia Pedra do Sal", 'lat': -2.816892, 'lng': -41.728505},
-    {'nome': "Lagoa do Portinho", 'lat': -2.963750, 'lng': -41.683123},
-  ];
 
-  // Lista de hotéis
-  final List<Map<String, dynamic>> hoteis = [
-    {'nome': 'Citi Executivo Hotel', 'lat': -2.913962, 'lng': -41.753847},
-    {'nome': 'Hotel Portal dos Ventos', 'lat': -2.908528, 'lng': -41.752094},
-  ];
+  // Função para gerar marcadores a partir dos dados da API
+  List<Map<String, dynamic>> _generateMarkersFromApi(List<PontosTuristicos> pontos) {
+    return pontos.map((ponto) {
+      IconData iconData;
+      Color markerColor;
 
-  // Lista de restaurantes
-  final List<Map<String, dynamic>> restaurantes = [
-    {'nome': 'Restaurante 1', 'lat': -2.910237, 'lng': -41.744985},
-  ];
+      switch (ponto.tipo.toLowerCase()) {
+        case 'turistico':
+        case 'turístico':
+          iconData = Icons.location_on;
+          markerColor = Colors.orange;
+          break;
+        case 'historico':
+        case 'histórico':
+          iconData = Icons.location_city;
+          markerColor = Colors.brown;
+          break;
+        case 'restaurante':
+          iconData = Icons.restaurant;
+          markerColor = Colors.green;
+          break;
+        case 'hotel':
+          iconData = Icons.hotel;
+          markerColor = Colors.blue;
+          break;
+        default:
+          iconData = Icons.place;
+          markerColor = Colors.red;
+      }
 
-  List<Map<String, dynamic>> _generateMarkers(
-      List<Map<String, dynamic>> locations, String type, Color color) {
-    return locations.map((location) {
       return {
-        'type': type,
-        'nome': location['nome'],
+        'type': ponto.tipo,
+        'nome': ponto.nome,
         'marker': Marker(
-          point: LatLng(location['lat'], location['lng']),
-          builder: (_) => Icon(
-            type == 'Ponto Turístico' ? Icons.location_on : 
-            type == 'Hotel' ? Icons.hotel : Icons.restaurant,
-            color: color,
+          point: LatLng(double.parse(ponto.latitude), double.parse(ponto.longitude)
           ),
-          width: 30,
-          height: 30,
-          anchorPos: AnchorPos.align(AnchorAlign.top),
+          builder: (_) => Icon(iconData, color: markerColor, size: 30),
         ),
       };
     }).toList();
   }
 
-  List<Marker> getFilteredMarkers() {
+  // Gera marcadores estáticos (hotéis e restaurantes)
+  List<Map<String, dynamic>> _generateStaticMarkers(
+      List<Map<String, dynamic>> locations, String type, Color color) {
+    return locations.map((location) {
+      IconData icon = type == 'hotel'
+          ? Icons.hotel
+          : type == 'restaurante'
+              ? Icons.restaurant
+              : Icons.location_on;
+
+      return {
+        'type': type,
+        'nome': location['nome'],
+        'marker': Marker(
+          point: LatLng(location['lat'], location['lng']),
+          builder: (_) => Icon(icon, color: color, size: 30),
+        ),
+      };
+    }).toList();
+  }
+
+  // Retorna todos os marcadores filtrados
+  List<Marker> getFilteredMarkers(
+      List<PontosTuristicos> apiPoints, String selectedFilter) {
     List<Map<String, dynamic>> allMarkers = [];
-    
-    allMarkers.addAll(_generateMarkers(pontosTuristicos, 'Ponto Turístico', Colors.red));
-    allMarkers.addAll(_generateMarkers(hoteis, 'Hotel', Colors.blue));
-    allMarkers.addAll(_generateMarkers(restaurantes, 'Restaurante', Colors.green));
+
+    allMarkers.addAll(_generateMarkersFromApi(apiPoints));
+    allMarkers.addAll(_generateStaticMarkers(hoteis, 'hotel', Colors.blue));
+    allMarkers.addAll(_generateStaticMarkers(restaurantes, 'restaurante', Colors.green));
 
     if (selectedFilter == 'Todos') {
       return allMarkers.map((m) => m['marker'] as Marker).toList();
     } else {
       return allMarkers
-          .where((marker) => marker['type'] == selectedFilter)
+          .where((marker) =>
+              marker['type'].toString().toLowerCase() ==
+              selectedFilter.toLowerCase())
           .map((m) => m['marker'] as Marker)
           .toList();
     }
@@ -98,7 +130,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar Saida'),
+        title: const Text('Confirmar Saída'),
         content: const Text('Deseja realmente sair da sua conta?'),
         actions: [
           TextButton(
@@ -133,22 +165,11 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
           PopupMenuButton<String>(
             onSelected: _applyFilter,
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'Todos',
-                child: Text('Todos'),
-              ),
-              const PopupMenuItem(
-                value: 'Ponto Turístico',
-                child: Text('Pontos Turísticos'),
-              ),
-              const PopupMenuItem(
-                value: 'Hotel',
-                child: Text('Hotéis'),
-              ),
-              const PopupMenuItem(
-                value: 'Restaurante',
-                child: Text('Restaurantes'),
-              ),
+              const PopupMenuItem(value: 'Todos', child: Text('Todos')),
+              const PopupMenuItem(value: 'turístico', child: Text('Turísticos')),
+              const PopupMenuItem(value: 'histórico', child: Text('Históricos')),
+              const PopupMenuItem(value: 'hotel', child: Text('Hotéis')),
+              const PopupMenuItem(value: 'restaurante', child: Text('Restaurantes')),
               const PopupMenuItem(
                 value: 'Sair',
                 child: Text('Sair', style: TextStyle(color: Colors.red)),
@@ -157,47 +178,49 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              center: parnaibaLocation,
-              zoom: 13,
-              minZoom: 0,
-              maxZoom: 100,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", 
+      body: FutureBuilder<List<PontosTuristicos>>(
+        future: futurePontos,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            List<PontosTuristicos> pontos = snapshot.data!;
+            return FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                center: parnaibaLocation,
+                zoom: 13,
+                minZoom: 0,
+                maxZoom: 100,
               ),
-              CurrentLocationLayer(
-                style: const LocationMarkerStyle(
-                  marker: DefaultLocationMarker(
-                    child: Icon(
-                      Icons.location_pin,
-                      color: Colors.white,
-                    ),
-                  ),
-                  markerSize: Size(35, 35),
-                  markerDirection: MarkerDirection.heading,
+              children: [
+                TileLayer(
+                  urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", 
                 ),
-              ),
-              MarkerLayer(markers: getFilteredMarkers()),
-            ],
-          ),
-        ],
+                CurrentLocationLayer(
+                  style: const LocationMarkerStyle(
+                    marker: DefaultLocationMarker(
+                      child: Icon(Icons.location_pin, color: Colors.white),
+                    ),
+                    markerSize: Size(35, 35),
+                    markerDirection: MarkerDirection.heading,
+                  ),
+                ),
+                MarkerLayer(
+                  markers: getFilteredMarkers(pontos, selectedFilter),
+                ),
+              ],
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Erro ao carregar pontos: ${snapshot.error}"));
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _mapController.move(parnaibaLocation, 13);
         },
         backgroundColor: Colors.blue,
-        child: const Icon(
-          Icons.my_location,
-          size: 30,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.my_location, size: 30, color: Colors.white),
       ),
     );
   }
