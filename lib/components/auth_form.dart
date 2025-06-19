@@ -20,7 +20,7 @@ class AuthForm extends StatefulWidget {
 class _AuthFormState extends State<AuthForm> {
   final formKey = GlobalKey<FormState>();
   final _formData = AuthFormData();
-  bool _isLoading = false; // Adicionado para controlar o estado de carregamento
+  bool _isLoading = false;
 
   void _handleImagePick(File image) {
     _formData.image = image;
@@ -35,7 +35,7 @@ class _AuthFormState extends State<AuthForm> {
     );
   }
 
-  Future<void> _submit() async { // Modificado para ser assíncrono
+  Future<void> _submit() async {
     final isValid = formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
@@ -43,47 +43,70 @@ class _AuthFormState extends State<AuthForm> {
       return _showError('Imagem Não Selecionada!');
     }
 
-    setState(() {
-      _isLoading = true; // Ativa o indicador de carregamento
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // URL da sua API - substitua pela sua URL real
       final url = Uri.parse(
         _formData.islogin
             ? 'http://127.0.0.1:8000/api/login'
             : 'http://127.0.0.1:8000/api/register',
       );
 
-      // Criando o corpo da requisição
-      final requestBody = {
-        'email': _formData.email,
-        'password': _formData.password,
-        if (_formData.issingnup) 'name': _formData.name,
-      };
-
-      // Fazendo a chamada à API
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
-      );
-
-      final responseData = jsonDecode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Se a API retornar sucesso
-        widget.onSubmit(_formData); // Chama a função de callback
+      // Se for cadastro e tiver imagem, usa MultipartRequest
+      if (_formData.issingnup && _formData.image != null) {
+        var request = http.MultipartRequest('POST', url);
+        
+        request.fields['email'] = _formData.email;
+        request.fields['password'] = _formData.password;
+        request.fields['name'] = _formData.name;
+        
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image', 
+            _formData.image!.path,
+          ),
+        );
+        
+        final response = await request.send();
+        final responseData = await response.stream.bytesToString();
+        
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          widget.onSubmit(_formData);
+        } else {
+          _showError(jsonDecode(responseData)['message'] ?? 'Erro no registro');
+        }
       } else {
-        // Se houver erro na API
-        _showError(responseData['message'] ?? 'Erro na autenticação');
+        // Requisição normal para login ou registro sem imagem
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': _formData.email,
+            'password': _formData.password,
+            if (_formData.issingnup) 'name': _formData.name,
+          }),
+        );
+
+        final responseData = jsonDecode(response.body);
+        
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          widget.onSubmit(_formData);
+        } else {
+          _showError(responseData['message'] ?? 'Erro na autenticação');
+        }
       }
+    } on SocketException {
+      _showError('Sem conexão com a internet');
+    } on http.ClientException {
+      _showError('Erro ao conectar com o servidor');
+    } on FormatException {
+      _showError('Erro no formato dos dados');
     } catch (error) {
-      _showError('Erro de conexão: $error');
+      _showError('Ocorreu um erro inesperado: $error');
     } finally {
-      setState(() {
-        _isLoading = false; // Desativa o indicador de carregamento
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -144,12 +167,12 @@ class _AuthFormState extends State<AuthForm> {
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: _isLoading ? null : _submit, // Desabilita o botão durante o carregamento
+                onPressed: _isLoading ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                 ),
                 child: _isLoading
-                    ? const CircularProgressIndicator() // Mostra um spinner durante o carregamento
+                    ? const CircularProgressIndicator()
                     : Text(_formData.islogin ? 'Entrar' : 'Cadastrar'),
               ),
               TextButton(
