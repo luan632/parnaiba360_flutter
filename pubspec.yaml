@@ -72,6 +72,11 @@ flutter:
     - assets/images/lagoa.webp
     - assets/images/ambiente-externo.jpg
     - assets/images/Mangata.jpg
+    - assets/images/hotel-delta-parnaiba.jpg
+    - assets/images/Pedra-do-Sal.png
+    - assets/images/Parnaiba-Shopping.jpg
+    - assets/images/quadrilhodromo.jpg
+    - assets/images/Hotel-Civico.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

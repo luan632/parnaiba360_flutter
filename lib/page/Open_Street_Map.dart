@@ -34,7 +34,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lng': -41.768831,
       'descricao': "A Praça Mandu Ladino é um espaço histórico da cidade.",
       'endereco': "Rua Paul Harris - Nossa Sra. de Fátima, Parnaíba - PI, 64202-400",
-      'imagem': 'assets/imagens/praca_mandu.jpg',
+      'imagem': 'assets/images/quadrilhodromo.jpg',
     },
     {
       'nome': "Parnaíba Shopping",
@@ -42,7 +42,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lng': -41.746951,
       'descricao': "O Parnaíba Shopping é o único centro de compras, serviços e entretenimento da região do litoral do Piauí.",
       'endereco': "Av. São Sebastião, 3429 - Reis Veloso, Parnaíba - PI, 64204-035",
-      'imagem': 'assets/imagens/parnaiba_shopping.jpg',
+      'imagem': 'assets/images/Parnaiba-Shopping.jpg',
     },
     {
       'nome': "Praia Pedra do Sal",
@@ -50,7 +50,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lng': -41.729110,
       'descricao': "Praia famosa pela pesca artesanal e gastronomia local.",
       'endereco': "Pedra do Sal, Parnaíba - PI",
-      'imagem': 'assets/imagens/pedra_do_sal.jpg',
+      'imagem': 'assets/images/Pedra-do-Sal.png',
     },
     {
       'nome': "Lagoa do Portinho",
@@ -69,7 +69,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lng': -41.773410,
       'descricao': "Hotel moderno e bem localizado no centro comercial.",
       'endereco': "Av. Chagas Rodrigues, 474 - Centro, Parnaíba - PI, 64200-490",
-      'imagem': 'assets/imagens/hotel_civico.jpg',
+      'imagem': 'assets/images/Hotel-Civico.jpg',
     },
     {
       'nome': 'Hotel Delta',
@@ -77,7 +77,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lng': -41.779482,
       'descricao': "Localizado próximo ao centro histórico da cidade o Porto das Barcas.",
       'endereco': "Av. Pres. Getúlio Vargas, 268 - Centro, Parnaíba - PI, 64200-200",
-      'imagem': 'assets/imagens/hotel_delta.jpg',
+      'imagem': 'assets/images/hotel-delta-parnaiba.jpg',
     },
   ];
 
