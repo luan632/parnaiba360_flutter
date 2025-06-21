@@ -17,10 +17,11 @@ class OpenStreetMap extends StatefulWidget {
 class _OpenStreetMapState extends State<OpenStreetMap> {
   final MapController _mapController = MapController();
   final LatLng parnaibaLocation = const LatLng(-2.9038, -41.7767);
-  String selectedFilter = 'Ponto Turístico'; // Alterado para um valor padrão diferente de 'Todos'
+  String selectedFilter = 'Ponto Turístico';
   final AuthService _authService = AuthMockService();
   late Future<List<PontosTuristicos>> futurePontos;
 
+  @override
   void initState() {
     super.initState();
     futurePontos = ApiServices().getPontos();
@@ -32,28 +33,32 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lat': -2.902870,
       'lng': -41.768831,
       'descricao': "A Praça Mandu Ladino é um espaço histórico da cidade.",
-      'endereco': "Rua Paul Harris - Nossa Sra. de Fátima, Parnaíba - PI, 64202-400"
+      'endereco': "Rua Paul Harris - Nossa Sra. de Fátima, Parnaíba - PI, 64202-400",
+      'imagem': 'assets/imagens/praca_mandu.jpg',
     },
     {
       'nome': "Parnaíba Shopping",
       'lat': -2.909734,
       'lng': -41.746951,
-      'descricao': "O Parnaíba Shopping é o único centro de compras, serviços e entretenimento da região do litoral do Piauí, localizado em Parnaíba.",
-      'endereco': "Av. São Sebastião, 3429 - Reis Veloso, Parnaíba - PI, 64204-035"
+      'descricao': "O Parnaíba Shopping é o único centro de compras, serviços e entretenimento da região do litoral do Piauí.",
+      'endereco': "Av. São Sebastião, 3429 - Reis Veloso, Parnaíba - PI, 64204-035",
+      'imagem': 'assets/imagens/parnaiba_shopping.jpg',
     },
     {
       'nome': "Praia Pedra do Sal",
       'lat': -2.805365,
       'lng': -41.729110,
       'descricao': "Praia famosa pela pesca artesanal e gastronomia local.",
-      'endereco': "Pedra do Sal, Parnaíba - PI"
+      'endereco': "Pedra do Sal, Parnaíba - PI",
+      'imagem': 'assets/imagens/pedra_do_sal.jpg',
     },
     {
       'nome': "Lagoa do Portinho",
       'lat': -2.931272,
       'lng': -41.676872,
       'descricao': "Área de lazer com lago natural e trilhas ecológicas mais também pela sua lenda que envolve amor, rivalidade tribal e a intervenção do deus Tupã, conta que a lagoa surgiu das lágrimas de Macyrajara, uma índia da tribo dos Tremembés, após a morte de seu amado Ubitã, guerreiro de uma tribo rival.",
-      'endereco': "Estrada Portinho, Parnaíba - PI"
+      'endereco': "Estrada Portinho, Parnaíba - PI",
+      'imagem': 'assets/images/lagoa.webp',
     },
   ];
 
@@ -63,16 +68,17 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lat': -2.903465,
       'lng': -41.773410,
       'descricao': "Hotel moderno e bem localizado no centro comercial.",
-      'endereco': "Av. Chagas Rodrigues, 474 - Centro, Parnaíba - PI, 64200-490"
+      'endereco': "Av. Chagas Rodrigues, 474 - Centro, Parnaíba - PI, 64200-490",
+      'imagem': 'assets/imagens/hotel_civico.jpg',
     },
     {
       'nome': 'Hotel Delta',
       'lat': -2.902006,
       'lng': -41.779482,
       'descricao': "Localizado próximo ao centro histórico da cidade o Porto das Barcas.",
-      'endereco': "Av. Pres. Getúlio Vargas, 268 - Centro, Parnaíba - PI, 64200-200"
+      'endereco': "Av. Pres. Getúlio Vargas, 268 - Centro, Parnaíba - PI, 64200-200",
+      'imagem': 'assets/imagens/hotel_delta.jpg',
     },
-    
   ];
 
   final List<Map<String, dynamic>> restaurantes = [
@@ -81,14 +87,16 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lat': -2.910322,
       'lng': -41.744839,
       'descricao': "Comida regional e pratos internacionais.",
-      'endereco': "Av. São Sebastião, 3900 - Frei Higino, Parnaíba - PI, 64207-005"
+      'endereco': "Av. São Sebastião, 3900 - Frei Higino, Parnaíba - PI, 64207-005",
+      'imagem': 'assets/images/Mangata.jpg',
     },
     {
       'nome': 'Restaurante Don Ladino',
       'lat': -2.903190,
       'lng': -41.768249,
       'descricao': "Comida regional e pratos internacionais.",
-      'endereco': "Rua Padre Raimundo José Viêira, 378 - Nossa Sra. de Fátima, Parnaíba - PI, 64202-340"
+      'endereco': "Rua Padre Raimundo José Viêira, 378 - Nossa Sra. de Fátima, Parnaíba - PI, 64202-340",
+      'imagem': 'assets/images/ambiente-externo.jpg',
     },
   ];
 
@@ -124,23 +132,63 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
   void _showMarkerInfo(BuildContext context, Map<String, dynamic> info) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(info['nome']),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Descrição: ${info['descricao']}"),
-            const SizedBox(height: 10),
-            Text("Endereço: ${info['endereco']}"),
-          ],
+      builder: (context) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                info['nome'],
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              if (info['imagem'] != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    info['imagem'],
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 180,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.broken_image, size: 50),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Text(
+                info['descricao'],
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.location_on, size: 16),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      info['endereco'],
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Fechar'),
+                ),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: Navigator.of(context).pop,
-            child: const Text('Fechar'),
-          )
-        ],
       ),
     );
   }
@@ -152,7 +200,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
     allMarkers.addAll(_generateMarkers(hoteis, 'Hotel', Colors.blue));
     allMarkers.addAll(_generateMarkers(restaurantes, 'Restaurante', Colors.orange));
 
-    // Removida a condição para 'Todos'
     return allMarkers
         .where((marker) => marker['type'] == selectedFilter)
         .map((m) => m['marker'] as Marker)
@@ -210,7 +257,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
           PopupMenuButton<String>(
             onSelected: _applyFilter,
             itemBuilder: (context) => [
-              // Removido o item 'Todos' do menu
               const PopupMenuItem(
                 value: 'Ponto Turístico',
                 child: Row(
