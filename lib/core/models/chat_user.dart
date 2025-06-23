@@ -11,4 +11,6 @@ class ChatUser {
     required this.imageURL,
 
   });
+
+  get displayName => null;
 }
