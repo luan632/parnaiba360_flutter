@@ -308,8 +308,8 @@ class _AuthFormState extends State<AuthForm> {
       key: key,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: MaterialStateTextStyle.resolveWith((Set<MaterialState> states) {
-          if (states.contains(MaterialState.focused)) {
+        labelStyle: WidgetStateTextStyle.resolveWith((Set<WidgetState> states) {
+          if (states.contains(WidgetState.focused)) {
             return TextStyle(color: primaryColor, fontSize: 16);
           }
           return TextStyle(color: Colors.grey[600], fontSize: 16);
