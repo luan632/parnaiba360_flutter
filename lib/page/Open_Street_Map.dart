@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'package:parnaiba360_flutter/core/service/auth/auth_service.dart';
 import 'package:parnaiba360_flutter/core/service/auth/auth_mock_service.dart';
@@ -51,10 +52,24 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
 
   late Future<List<PontosTuristicos>> futurePontos;
 
+  // Controladores para filtros
+  final TextEditingController _searchController = TextEditingController();
+  bool _showFiltersPanel = false;
+
+  // Controladores para perfil e feedback
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _feedbackController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     futurePontos = ApiServices().getPontos();
+    // Preencher dados do usuário se disponível
+    if (_authService.currentUser != null) {
+      _nomeController.text = _authService.currentUser?.displayName ?? '';
+      _emailController.text = _authService.currentUser?.email ?? '';
+    }
   }
 
   // Pontos Turísticos
@@ -67,6 +82,8 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'endereco': "Rua Paul Harris - Nossa Sra. de Fátima, Parnaíba - PI, 64202-400",
       'imagem': 'assets/images/quadrilhodromo.jpg',
       'comentarios': <Comentario>[],
+      'categoria': 'Ponto Turístico',
+      'preco': 0,
     },
     {
       'nome': "Parnaíba Shopping",
@@ -76,6 +93,8 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'endereco': "Av. São Sebastião, 3429 - Reis Veloso, Parnaíba - PI, 64204-035",
       'imagem': 'assets/images/Parnaiba-Shopping.jpg',
       'comentarios': <Comentario>[],
+      'categoria': 'Ponto Turístico',
+      'preco': 0,
     },
     {
       'nome': "Praia Pedra do Sal",
@@ -85,6 +104,8 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'endereco': "Pedra do Sal, Parnaíba - PI",
       'imagem': 'assets/images/Pedra-do-Sal.png',
       'comentarios': <Comentario>[],
+      'categoria': 'Ponto Turístico',
+      'preco': 0,
     },
     {
       'nome': "Lagoa do Portinho",
@@ -94,6 +115,8 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'endereco': "Estrada Portinho, Parnaíba - PI",
       'imagem': 'assets/images/lagoa.webp',
       'comentarios': <Comentario>[],
+      'categoria': 'Ponto Turístico',
+      'preco': 0,
     },
   ];
 
@@ -107,6 +130,8 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'endereco': "Av. Chagas Rodrigues, 474 - Centro, Parnaíba - PI, 64200-490",
       'imagem': 'assets/images/Hotel-Civico.jpg',
       'comentarios': <Comentario>[],
+      'categoria': 'Hotel',
+      'preco': 3, // 3 cifrões (escala de preço)
     },
     {
       'nome': 'Hotel Delta',
@@ -116,6 +141,8 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'endereco': "Av. Pres. Getúlio Vargas, 268 - Centro, Parnaíba - PI, 64200-200",
       'imagem': 'assets/images/hotel-delta-parnaiba.jpg',
       'comentarios': <Comentario>[],
+      'categoria': 'Hotel',
+      'preco': 2, // 2 cifrões (escala de preço)
     },
   ];
 
@@ -129,6 +156,8 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'endereco': "Av. São Sebastião, 3900 - Frei Higino, Parnaíba - PI, 64207-005",
       'imagem': 'assets/images/Mangata.jpg',
       'comentarios': <Comentario>[],
+      'categoria': 'Restaurante',
+      'preco': 3, // 3 cifrões (escala de preço)
     },
     {
       'nome': 'Restaurante Don Ladino',
@@ -136,10 +165,21 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'lng': -41.768249,
       'descricao': "Comida regional e pratos internacionais.",
       'endereco': "Rua Padre Raimundo José Viêira, 378 - Nossa Sra. de Fátima, Parnaíba - PI, 64202-340",
-      'imagem': 'assets/images/ambiente-externo.jpg',
+      'imagem': 'assets/images/ambiente-externa.jpg',
       'comentarios': <Comentario>[],
+      'categoria': 'Restaurante',
+      'preco': 2, // 2 cifrões (escala de preço)
     },
   ];
+
+  // Combina todas as localizações
+  List<Map<String, dynamic>> get allLocations {
+    return [
+      ...pontosTuristicos,
+      ...hoteis,
+      ...restaurantes,
+    ];
+  }
 
   // Gera marcadores dinamicamente
   List<Map<String, dynamic>> _generateMarkers(
@@ -148,22 +188,37 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       return {
         'type': type,
         'nome': location['nome'],
+        'data': location,
         'marker': Marker(
           point: LatLng(location['lat'], location['lng']),
-          width: 30,
-          height: 30,
+          width: 40,
+          height: 40,
           anchorPos: AnchorPos.align(AnchorAlign.top),
           builder: (_) => GestureDetector(
             onTap: () {
               _showMarkerInfo(context, location);
             },
-            child: Icon(
-              type == 'Ponto Turístico'
-                  ? Icons.location_on
-                  : type == 'Hotel'
-                      ? Icons.hotel
-                      : Icons.restaurant,
-              color: color,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                type == 'Ponto Turístico'
+                    ? Icons.landscape
+                    : type == 'Hotel'
+                        ? Icons.hotel
+                        : Icons.restaurant,
+                color: color,
+                size: 24,
+              ),
             ),
           ),
         ),
@@ -185,45 +240,68 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       builder: (context) => StatefulBuilder(
         builder: (context, setStateDialog) {
           return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Stack(
+                    children: [
+                      if (info['imagem'] != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            info['imagem'],
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.broken_image, size: 50),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     info['nome'],
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
-                  if (info['imagem'] != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(
-                        info['imagem'],
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 180,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image, size: 50),
+                  const SizedBox(height: 8),
+                  // Exibir preço se disponível
+                  if (info['preco'] != null && info['preco'] > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        '\$' * info['preco'],
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   const SizedBox(height: 12),
                   Text(
                     info['descricao'] ?? info['descricao'],
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: const TextStyle(fontSize: 16, height: 1.4),
+                    textAlign: TextAlign.justify,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16),
-                      const SizedBox(width: 4),
+                      const Icon(Icons.location_on, size: 18, color: Colors.blue),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           info['endereco'],
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: const TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                       ),
                     ],
@@ -252,6 +330,9 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                         final comentario = comentarios[index];
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.all(12.0),
                             child: Column(
@@ -295,7 +376,9 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'Deixe seu comentário',
-                      border: const OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.send, color: Colors.blue),
                         onPressed: () {
@@ -327,11 +410,18 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                   ),
                   
                   const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Fechar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Fechar', style: TextStyle(color: Colors.white)),
                     ),
                   ),
                 ],
@@ -348,25 +438,141 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
     List<Map<String, dynamic>> allMarkers = [];
     allMarkers.addAll(_generateMarkers(pontosTuristicos, 'Ponto Turístico', Colors.red));
     allMarkers.addAll(_generateMarkers(hoteis, 'Hotel', Colors.blue));
-    allMarkers.addAll(_generateMarkers(restaurantes, 'Restaurante', Colors.orange));
+    allMarkers.addAll(_generateMarkers(restaurantes, 'Restaurante', Colors.green));
 
-    return allMarkers
-        .where((marker) => marker['type'] == selectedFilter)
-        .map((m) => m['marker'] as Marker)
-        .toList();
+    // Aplicar filtros
+    List<Map<String, dynamic>> filteredMarkers = allMarkers.where((marker) {
+      // Filtro por categoria
+      if (selectedFilter != 'Todos' && marker['type'] != selectedFilter) {
+        return false;
+      }
+      
+      // Filtro por texto de busca
+      if (_searchController.text.isNotEmpty) {
+        final nome = marker['nome'].toString().toLowerCase();
+        if (!nome.contains(_searchController.text.toLowerCase())) {
+          return false;
+        }
+      }
+      
+      return true;
+    }).toList();
+
+    return filteredMarkers.map((m) => m['marker'] as Marker).toList();
   }
 
-  // Aplica filtro ou logout
+  // Aplica filtro ou abre perfil
   void _applyFilter(String? filter) {
     if (filter != null) {
       if (filter == 'Sair') {
         _confirmLogout(context);
+      } else if (filter == 'Perfil') {
+        _showProfileDialog(context);
       } else {
         setState(() {
           selectedFilter = filter;
         });
       }
     }
+  }
+
+  // Mostra diálogo de perfil
+  void _showProfileDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Meu Perfil'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.blue,
+                child: Icon(
+                  Icons.person,
+                  size: 40,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _nomeController,
+                decoration: InputDecoration(
+                  labelText: 'Nome',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const Text(
+                'Enviar Feedback',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _feedbackController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Digite seu feedback aqui...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_feedbackController.text.isNotEmpty) {
+                _sendFeedback();
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Feedback enviado com sucesso!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Perfil atualizado!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Envia feedback (simulação)
+  void _sendFeedback() {
+    // Aqui você implementaria a lógica real para enviar o feedback
+    print('Feedback enviado: ${_feedbackController.text}');
+    _feedbackController.clear();
   }
 
   // Confirma logout
@@ -378,12 +584,12 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
         content: const Text('Deseja realmente sair da sua conta?'),
         actions: [
           TextButton(
-            onPressed: Navigator.of(context).pop,
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancelar'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Sair', style: TextStyle(color: Colors.red)),
+            child: const Text('Sair', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -395,6 +601,75 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
     }
   }
 
+  // Widget para o painel de filtros
+  Widget _buildFiltersPanel() {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 300),
+      top: _showFiltersPanel ? 80 : -250,
+      left: 20,
+      right: 20,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Filtros',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Buscar por nome...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                    });
+                  },
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {});
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                    });
+                  },
+                  child: const Text('Limpar Filtros'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -403,7 +678,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
         backgroundColor: Colors.blue,
         title: Row(
           children: [
-            Icon(Icons.location_on, color: Colors.yellowAccent, size: 28),
+            const Icon(Icons.location_on, color: Colors.yellowAccent, size: 28),
             const SizedBox(width: 10),
             Text(
               'Parnaíba360',
@@ -412,7 +687,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                 letterSpacing: 1.2,
-                shadows: [
+                shadows: const [
                   Shadow(
                     color: Colors.black54,
                     offset: Offset(1, 1),
@@ -424,6 +699,14 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              setState(() {
+                _showFiltersPanel = !_showFiltersPanel;
+              });
+            },
+          ),
           PopupMenuButton<String>(
             onSelected: _applyFilter,
             itemBuilder: (context) => [
@@ -431,7 +714,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                 value: 'Ponto Turístico',
                 child: Row(
                   children: [
-                    Icon(Icons.location_on, color: Colors.red),
+                    Icon(Icons.landscape, color: Colors.red),
                     SizedBox(width: 10),
                     Text('Pontos Turísticos'),
                   ],
@@ -451,9 +734,19 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                 value: 'Restaurante',
                 child: Row(
                   children: [
-                    Icon(Icons.restaurant, color: Colors.orange),
+                    Icon(Icons.restaurant, color: Colors.green),
                     SizedBox(width: 10),
                     Text('Restaurantes'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'Perfil',
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: Colors.purple),
+                    SizedBox(width: 10),
+                    Text('Perfil'),
                   ],
                 ),
               ),
@@ -480,35 +773,70 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
               zoom: 13,
               minZoom: 0,
               maxZoom: 100,
+              onPositionChanged: (MapPosition position, bool hasGesture) {
+                if (hasGesture) {
+                  // O usuário moveu o mapa manualmente
+                }
+              },
             ),
             children: [
               TileLayer(
                 urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", 
               ),
               CurrentLocationLayer(
-                style: const LocationMarkerStyle(
+                style: LocationMarkerStyle(
                   marker: DefaultLocationMarker(
-                    child: Icon(Icons.location_pin, color: Colors.white),
+                    color: Colors.blue,
+                    child: const Icon(Icons.person_pin_circle, color: Colors.white),
                   ),
-                  markerSize: Size(35, 35),
-                  markerDirection: MarkerDirection.heading,
+                  markerSize: const Size(40, 40),
+                  accuracyCircleColor: Colors.blue.withOpacity(0.3),
+                  headingSectorColor: Colors.blue,
+                  headingSectorRadius: 60,
+                  showAccuracyCircle: true,
+                  showHeadingSector: true,
                 ),
+                turnOnHeadingUpdate: TurnOnHeadingUpdate.never,
               ),
               MarkerLayer(markers: getFilteredMarkers()),
             ],
           ),
+          // Botão para centralizar na localização atual
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: Column(
+              children: [
+                FloatingActionButton(
+                  onPressed: () {
+                    _mapController.move(parnaibaLocation, 13);
+                  },
+                  backgroundColor: Colors.blue,
+                  child: const Icon(
+                    Icons.my_location,
+                    size: 30,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      _showFiltersPanel = !_showFiltersPanel;
+                    });
+                  },
+                  backgroundColor: _showFiltersPanel ? Colors.orange : Colors.blue,
+                  mini: true,
+                  child: Icon(
+                    _showFiltersPanel ? Icons.close : Icons.filter_list,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildFiltersPanel(),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _mapController.move(parnaibaLocation, 13);
-        },
-        backgroundColor: Colors.blue,
-        child: const Icon(
-          Icons.my_location,
-          size: 30,
-          color: Colors.white,
-        ),
       ),
     );
   }
