@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:parnaiba360_flutter/components/user_image_picker.dart';
 import 'package:parnaiba360_flutter/core/models/auth_form_data.dart';
 
 class AuthForm extends StatefulWidget {
@@ -23,10 +22,6 @@ class _AuthFormState extends State<AuthForm> {
   bool _isLoading = false;
   bool _obscurePassword = true; // Controla se a senha está oculta
 
-  void _handleImagePick(File image) {
-    _formData.image = image;
-  }
-
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -42,10 +37,6 @@ class _AuthFormState extends State<AuthForm> {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
-    if (_formData.issingnup && _formData.image == null) {
-      return _showError('Por favor, selecione uma imagem de perfil!');
-    }
-
     setState(() => _isLoading = true);
 
     try {
@@ -55,40 +46,22 @@ class _AuthFormState extends State<AuthForm> {
             : 'http://127.0.0.1:8000/api/register',
       );
 
-      if (_formData.issingnup && _formData.image != null) {
-        final request = http.MultipartRequest('POST', url)
-          ..fields['email'] = _formData.email
-          ..fields['password'] = _formData.password
-          ..fields['name'] = _formData.name
-          ..files.add(await http.MultipartFile.fromPath('image', _formData.image!.path));
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _formData.email,
+          'password': _formData.password,
+          if (_formData.issingnup) 'name': _formData.name,
+        }),
+      );
 
-        final response = await request.send();
-        final responseData = await response.stream.bytesToString();
+      final responseData = jsonDecode(response.body);
 
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          widget.onSubmit(_formData);
-        } else {
-          final message = jsonDecode(responseData)['message'] ?? 'Erro no registro';
-          _showError(message);
-        }
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        widget.onSubmit(_formData);
       } else {
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': _formData.email,
-            'password': _formData.password,
-            if (_formData.issingnup) 'name': _formData.name,
-          }),
-        );
-
-        final responseData = jsonDecode(response.body);
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          widget.onSubmit(_formData);
-        } else {
-          _showError(responseData['message'] ?? 'Erro na autenticação');
-        }
+        _showError(responseData['message'] ?? 'Erro na autenticação');
       }
     } on SocketException {
       _showError('Sem conexão com a internet');
@@ -147,15 +120,6 @@ class _AuthFormState extends State<AuthForm> {
               ),
               const SizedBox(height: 28),
 
-              // Seletor de imagem (apenas no cadastro)
-              if (_formData.issingnup)
-                Column(
-                  children: [
-                    UserImagePicker(onImagePick: _handleImagePick),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-
               // Campo Nome Completo
               if (_formData.issingnup)
                 _buildInputField(
@@ -172,7 +136,7 @@ class _AuthFormState extends State<AuthForm> {
                   key: const ValueKey('name'),
                 ),
 
-              const SizedBox(height: 16),
+              if (_formData.issingnup) const SizedBox(height: 16),
 
               // Campo Email
               _buildInputField(

@@ -17,7 +17,7 @@ class _AuthPageState extends State<AuthPage> {
     try {
       setState(() => _isLoading = true);
 
-      if (formData.islogin) {
+      if (formData.islogin) { // Corrigido: islogin → isLogin
         // login
         await AuthMockService().login(formData.email, formData.password);
       } else {
@@ -26,49 +26,77 @@ class _AuthPageState extends State<AuthPage> {
           formData.name,
           formData.email,
           formData.password,
-          formData.image,
         );
       }
+      
+      // Navegar para a próxima tela após sucesso
+      // Navigator.of(context).pushReplacementNamed('/home');
+      
     } catch (error) {
-      // Tratar erro aqui
+      // Tratar erro de forma mais robusta
+      _showErrorDialog(error.toString());
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) { // Verifica se o widget ainda está montado
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Erro'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Imagem de fundo
-          Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/praia.jpeg'),
-                fit: BoxFit.cover,
-              ),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1A2980),  // Azul escuro
+              Color(0xFF26D0CE),  // Ciano
+            ],
           ),
-
-          // Conteúdo centralizado sobre a imagem
-          Center(
-            child: SingleChildScrollView(
-              child: AuthForm(onSubmit: _handleSubmit),
-            ),
-          ),
-
-          // Overlay de carregamento
-          if (_isLoading)
-            Container(
-              decoration: BoxDecoration(
-                color: Color.fromRGBO(0, 0, 0, 0.5),
-              ),
-              child: Center(
-                child: CircularProgressIndicator(),
+        ),
+        child: Stack(
+          children: [
+            // Conteúdo centralizado sobre o gradiente
+            Center(
+              child: SingleChildScrollView(
+                child: Container(
+                  margin: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
+                  child: AuthForm(onSubmit: _handleSubmit),
+                ),
               ),
             ),
-        ],
+
+            // Overlay de carregamento
+            if (_isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.5),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

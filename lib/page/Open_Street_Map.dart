@@ -971,79 +971,91 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              center: parnaibaLocation,
-              zoom: 13,
-              minZoom: 0,
-              maxZoom: 100,
-              onPositionChanged: (MapPosition position, bool hasGesture) {
-                if (hasGesture) {
-                  // O usuário moveu o mapa manualmente
-                }
-              },
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", 
-              ),
-              CurrentLocationLayer(
-                style: LocationMarkerStyle(
-                  marker: DefaultLocationMarker(
-                    color: Colors.blue,
-                    child: const Icon(Icons.person_pin_circle, color: Colors.white),
-                  ),
-                  markerSize: const Size(40, 40),
-                  accuracyCircleColor: Colors.blue.withOpacity(0.3),
-                  headingSectorColor: Colors.blue,
-                  headingSectorRadius: 60,
-                  showAccuracyCircle: true,
-                  showHeadingSector: true,
-                ),
-                turnOnHeadingUpdate: TurnOnHeadingUpdate.never,
-              ),
-              MarkerLayer(markers: getFilteredMarkers()),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1A2980),  // Azul escuro
+              Color(0xFF26D0CE),  // Ciano
             ],
           ),
-          // Botão para centralizar na localização atual
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: Column(
+        ),
+        child: Stack(
+          children: [
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                center: parnaibaLocation,
+                zoom: 13,
+                minZoom: 0,
+                maxZoom: 100,
+                onPositionChanged: (MapPosition position, bool hasGesture) {
+                  if (hasGesture) {
+                    // O usuário moveu o mapa manualmente
+                  }
+                },
+              ),
               children: [
-                FloatingActionButton(
-                  onPressed: () {
-                    _mapController.move(parnaibaLocation, 13);
-                  },
-                  backgroundColor: Colors.blue,
-                  child: const Icon(
-                    Icons.my_location,
-                    size: 30,
-                    color: Colors.white,
-                  ),
+                TileLayer(
+                  urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", 
                 ),
-                const SizedBox(height: 10),
-                FloatingActionButton(
-                  onPressed: () {
-                    setState(() {
-                      _showFiltersPanel = !_showFiltersPanel;
-                    });
-                  },
-                  backgroundColor: _showFiltersPanel ? Colors.orange : Colors.blue,
-                  mini: true,
-                  child: Icon(
-                    _showFiltersPanel ? Icons.close : Icons.filter_list,
-                    color: Colors.white,
+                CurrentLocationLayer(
+                  style: LocationMarkerStyle(
+                    marker: DefaultLocationMarker(
+                      color: Colors.blue,
+                      child: const Icon(Icons.person_pin_circle, color: Colors.white),
+                    ),
+                    markerSize: const Size(40, 40),
+                    accuracyCircleColor: Colors.blue.withOpacity(0.3),
+                    headingSectorColor: Colors.blue,
+                    headingSectorRadius: 60,
+                    showAccuracyCircle: true,
+                    showHeadingSector: true,
                   ),
+                  turnOnHeadingUpdate: TurnOnHeadingUpdate.never,
                 ),
+                MarkerLayer(markers: getFilteredMarkers()),
               ],
             ),
-          ),
-          _buildFiltersPanel(),
-        ],
+            // Botão para centralizar na localização atual
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: Column(
+                children: [
+                  FloatingActionButton(
+                    onPressed: () {
+                      _mapController.move(parnaibaLocation, 13);
+                    },
+                    backgroundColor: Colors.blue,
+                    child: const Icon(
+                      Icons.my_location,
+                      size: 30,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  FloatingActionButton(
+                    onPressed: () {
+                      setState(() {
+                        _showFiltersPanel = !_showFiltersPanel;
+                      });
+                    },
+                    backgroundColor: _showFiltersPanel ? Colors.orange : Colors.blue,
+                    mini: true,
+                    child: Icon(
+                      _showFiltersPanel ? Icons.close : Icons.filter_list,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildFiltersPanel(),
+          ],
+        ),
       ),
     );
   }
