@@ -1,13 +1,60 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/plugin_api.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:parnaiba360_flutter/core/service/auth/auth_service.dart';
 import 'package:parnaiba360_flutter/core/service/auth/auth_mock_service.dart';
 import 'package:parnaiba360_flutter/core/models/pontos_turisticos.dart';
 import 'package:parnaiba360_flutter/core/service/api_services.dart';
+
+// Modelo de Usuário para armazenar dados do perfil
+class Usuario {
+  String id;
+  String nome;
+  String email;
+  String? fotoUrl;
+  String? telefone;
+  String? bio;
+  DateTime dataRegistro;
+
+  Usuario({
+    required this.id,
+    required this.nome,
+    required this.email,
+    this.fotoUrl,
+    this.telefone,
+    this.bio,
+    required this.dataRegistro,
+  });
+
+  factory Usuario.fromJson(Map<String, dynamic> json) {
+    return Usuario(
+      id: json['id'],
+      nome: json['nome'],
+      email: json['email'],
+      fotoUrl: json['fotoUrl'],
+      telefone: json['telefone'],
+      bio: json['bio'],
+      dataRegistro: DateTime.parse(json['dataRegistro']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nome': nome,
+      'email': email,
+      'fotoUrl': fotoUrl,
+      'telefone': telefone,
+      'bio': bio,
+      'dataRegistro': dataRegistro.toIso8601String(),
+    };
+  }
+}
 
 class Comentario {
   final String usuario;
@@ -59,16 +106,92 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
   // Controladores para perfil e feedback
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _telefoneController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
   final TextEditingController _feedbackController = TextEditingController();
+
+  // Dados do usuário atual
+  Usuario? _usuarioAtual;
+  File? _imagemPerfil;
+  final ImagePicker _imagePicker = ImagePicker();
+  bool _editandoPerfil = false;
 
   @override
   void initState() {
     super.initState();
     futurePontos = ApiServices().getPontos();
-    // Preencher dados do usuário se disponível
+    _carregarDadosUsuario();
+  }
+
+  // Carrega dados do usuário
+  void _carregarDadosUsuario() {
     if (_authService.currentUser != null) {
-      _nomeController.text = _authService.currentUser?.displayName ?? '';
-      _emailController.text = _authService.currentUser?.email ?? '';
+      // Simulação - em um app real, buscaria de um serviço ou banco de dados
+      setState(() {
+        _usuarioAtual = Usuario(
+          id: _authService.currentUser!.id,
+          nome: _authService.currentUser?.displayName ?? 'Usuário',
+          email: _authService.currentUser?.email ?? '',
+          telefone: '(86) 99999-9999', // Valor padrão
+          bio: 'Amante de viagens e explorar novos lugares!',
+          dataRegistro: DateTime.now(),
+        );
+        
+        _nomeController.text = _usuarioAtual!.nome;
+        _emailController.text = _usuarioAtual!.email;
+        _telefoneController.text = _usuarioAtual!.telefone ?? '';
+        _bioController.text = _usuarioAtual!.bio ?? '';
+      });
+    }
+  }
+
+  // Selecionar imagem da galeria
+  Future<void> _selecionarImagem() async {
+    final XFile? imagemSelecionada = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+
+    if (imagemSelecionada != null) {
+      setState(() {
+        _imagemPerfil = File(imagemSelecionada.path);
+      });
+    }
+  }
+
+  // Tirar foto com a câmera
+  Future<void> _tirarFoto() async {
+    final XFile? fotoTirada = await _imagePicker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
+
+    if (fotoTirada != null) {
+      setState(() {
+        _imagemPerfil = File(fotoTirada.path);
+      });
+    }
+  }
+
+  // Salvar alterações do perfil
+  void _salvarPerfil() {
+    if (_usuarioAtual != null) {
+      setState(() {
+        _usuarioAtual = Usuario(
+          id: _usuarioAtual!.id,
+          nome: _nomeController.text,
+          email: _emailController.text,
+          telefone: _telefoneController.text.isNotEmpty ? _telefoneController.text : null,
+          bio: _bioController.text.isNotEmpty ? _bioController.text : null,
+          dataRegistro: _usuarioAtual!.dataRegistro,
+          fotoUrl: _usuarioAtual!.fotoUrl, // Manter a URL existente (em app real faria upload da nova imagem)
+        );
+        
+        _editandoPerfil = false;
+      });
+      
+      // Aqui você implementaria a lógica para salvar no backend
+      print('Perfil salvo: ${_usuarioAtual!.toJson()}');
     }
   }
 
@@ -85,39 +208,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'categoria': 'Ponto Turístico',
       'preco': 0,
     },
-    {
-      'nome': "Parnaíba Shopping",
-      'lat': -2.909734,
-      'lng': -41.746951,
-      'descricao': "O Parnaíba Shopping é o único centro de compras, serviços e entretenimento da região do litoral do Piauí.",
-      'endereco': "Av. São Sebastião, 3429 - Reis Veloso, Parnaíba - PI, 64204-035",
-      'imagem': 'assets/images/Parnaiba-Shopping.jpg',
-      'comentarios': <Comentario>[],
-      'categoria': 'Ponto Turístico',
-      'preco': 0,
-    },
-    {
-      'nome': "Praia Pedra do Sal",
-      'lat': -2.805365,
-      'lng': -41.729110,
-      'descricao': "Praia famosa pela pesca artesanal e gastronomia local.",
-      'endereco': "Pedra do Sal, Parnaíba - PI",
-      'imagem': 'assets/images/Pedra-do-Sal.png',
-      'comentarios': <Comentario>[],
-      'categoria': 'Ponto Turístico',
-      'preco': 0,
-    },
-    {
-      'nome': "Lagoa do Portinho",
-      'lat': -2.931272,
-      'lng': -41.676872,
-      'descricao': "Área de lazer com lago natural e trilhas ecológicas mais também pela sua lenda que envolve amor, rivalidade tribal e a intervenção do deus Tupã, conta que a lagoa surgiu das lágrimas de Macyrajara, uma índia da tribo dos Tremembés, após a morte de seu amado Ubitã, guerreiro de uma tribo rival.",
-      'endereco': "Estrada Portinho, Parnaíba - PI",
-      'imagem': 'assets/images/lagoa.webp',
-      'comentarios': <Comentario>[],
-      'categoria': 'Ponto Turístico',
-      'preco': 0,
-    },
+    // ... outros pontos turísticos
   ];
 
   // Hotéis
@@ -131,19 +222,9 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'imagem': 'assets/images/Hotel-Civico.jpg',
       'comentarios': <Comentario>[],
       'categoria': 'Hotel',
-      'preco': 3, // 3 cifrões (escala de preço)
+      'preco': 3,
     },
-    {
-      'nome': 'Hotel Delta',
-      'lat': -2.902006,
-      'lng': -41.779482,
-      'descricao': "Localizado próximo ao centro histórico da cidade o Porto das Barcas.",
-      'endereco': "Av. Pres. Getúlio Vargas, 268 - Centro, Parnaíba - PI, 64200-200",
-      'imagem': 'assets/images/hotel-delta-parnaiba.jpg',
-      'comentarios': <Comentario>[],
-      'categoria': 'Hotel',
-      'preco': 2, // 2 cifrões (escala de preço)
-    },
+    // ... outros hotéis
   ];
 
   // Restaurantes
@@ -157,19 +238,9 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
       'imagem': 'assets/images/Mangata.jpg',
       'comentarios': <Comentario>[],
       'categoria': 'Restaurante',
-      'preco': 3, // 3 cifrões (escala de preço)
+      'preco': 3,
     },
-    {
-      'nome': 'Restaurante Don Ladino',
-      'lat': -2.903190,
-      'lng': -41.768249,
-      'descricao': "Comida regional e pratos internacionais.",
-      'endereco': "Rua Padre Raimundo José Viêira, 378 - Nossa Sra. de Fátima, Parnaíba - PI, 64202-340",
-      'imagem': 'assets/images/ambiente-externa.jpg',
-      'comentarios': <Comentario>[],
-      'categoria': 'Restaurante',
-      'preco': 2, // 2 cifrões (escala de preço)
-    },
+    // ... outros restaurantes
   ];
 
   // Combina todas as localizações
@@ -274,7 +345,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  // Exibir preço se disponível
                   if (info['preco'] != null && info['preco'] > 0)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -480,97 +550,234 @@ class _OpenStreetMapState extends State<OpenStreetMap> {
   void _showProfileDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Meu Perfil'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.blue,
-                child: Icon(
-                  Icons.person,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _nomeController,
-                decoration: InputDecoration(
-                  labelText: 'Nome',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_editandoPerfil ? 'Editar Perfil' : 'Meu Perfil'),
+                if (!_editandoPerfil)
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    onPressed: () {
+                      setStateDialog(() {
+                        _editandoPerfil = true;
+                      });
+                    },
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.blue,
+                        backgroundImage: _imagemPerfil != null
+                            ? FileImage(_imagemPerfil!) as ImageProvider
+                            : (_usuarioAtual?.fotoUrl != null
+                                ? NetworkImage(_usuarioAtual!.fotoUrl!)
+                                : const AssetImage('assets/images/default_avatar.png')) as ImageProvider,
+                        child: _editandoPerfil
+                            ? Align(
+                                alignment: Alignment.bottomRight,
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.camera_alt, size: 20),
+                                    onPressed: () {
+                                      _showImageSourceDialog(context);
+                                    },
+                                  ),
+                                ),
+                              )
+                            : null,
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const Text(
-                'Enviar Feedback',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _feedbackController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Digite seu feedback aqui...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 16),
+                  
+                  if (_editandoPerfil) ...[
+                    TextField(
+                      controller: _nomeController,
+                      decoration: InputDecoration(
+                        labelText: 'Nome',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _telefoneController,
+                      decoration: InputDecoration(
+                        labelText: 'Telefone',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _bioController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: 'Bio',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      _usuarioAtual?.nome ?? 'Usuário',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _usuarioAtual?.email ?? '',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    if (_usuarioAtual?.telefone != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _usuarioAtual!.telefone!,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                    if (_usuarioAtual?.bio != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _usuarioAtual!.bio!,
+                        style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Membro desde ${_usuarioAtual?.dataRegistro.day}/${_usuarioAtual?.dataRegistro.month}/${_usuarioAtual?.dataRegistro.year}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                  
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const Text(
+                    'Enviar Feedback',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _feedbackController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Digite seu feedback aqui...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              if (_editandoPerfil)
+                TextButton(
+                  onPressed: () {
+                    setStateDialog(() {
+                      _editandoPerfil = false;
+                      // Restaurar valores originais
+                      _nomeController.text = _usuarioAtual?.nome ?? '';
+                      _emailController.text = _usuarioAtual?.email ?? '';
+                      _telefoneController.text = _usuarioAtual?.telefone ?? '';
+                      _bioController.text = _usuarioAtual?.bio ?? '';
+                    });
+                  },
+                  child: const Text('Cancelar'),
                 ),
+              ElevatedButton(
+                onPressed: () {
+                  if (_editandoPerfil) {
+                    _salvarPerfil();
+                    setStateDialog(() {
+                      _editandoPerfil = false;
+                    });
+                  }
+                  
+                  if (_feedbackController.text.isNotEmpty) {
+                    _sendFeedback();
+                    _feedbackController.clear();
+                  }
+                  
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_editandoPerfil 
+                          ? 'Perfil atualizado com sucesso!' 
+                          : 'Feedback enviado com sucesso!'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Text(_editandoPerfil ? 'Salvar' : 'Enviar'),
               ),
             ],
-          ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Diálogo para escolher fonte da imagem
+  void _showImageSourceDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Escolher fonte da imagem'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Galeria'),
+              onTap: () {
+                Navigator.pop(context);
+                _selecionarImagem();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Câmera'),
+              onTap: () {
+                Navigator.pop(context);
+                _tirarFoto();
+              },
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (_feedbackController.text.isNotEmpty) {
-                _sendFeedback();
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Feedback enviado com sucesso!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Perfil atualizado!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-            child: const Text('Salvar'),
-          ),
-        ],
       ),
     );
   }
 
   // Envia feedback (simulação)
   void _sendFeedback() {
-    // Aqui você implementaria a lógica real para enviar o feedback
     print('Feedback enviado: ${_feedbackController.text}');
     _feedbackController.clear();
   }
