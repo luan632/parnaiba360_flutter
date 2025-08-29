@@ -199,7 +199,7 @@ class _AuthFormState extends State<AuthForm> {
                   }
                   return null;
                 },
-                onChanged: (value) => _formData.password = value ?? '',
+                onChanged: (value) => _formData.password = value,
                 style: const TextStyle(fontSize: 16),
                 cursorColor: primaryColor,
               ),

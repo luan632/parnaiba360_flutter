@@ -220,7 +220,7 @@ class OpenStreetMap extends StatefulWidget {
 class _OpenStreetMapState extends State<OpenStreetMap> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   final LatLng parnaibaLocation = const LatLng(-2.9038, -41.7767);
-  String selectedFilter = 'Ponto Turístico';
+  String selectedFilter = 'Todos'; // Alterado para 'Todos' como padrão
   final AuthService _authService = AuthMockService();
 
   late Future<List<PontosTuristicos>> futurePontos;
@@ -244,7 +244,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> with TickerProviderStateM
   
   // Animação
   late AnimationController _animationController;
-  late Animation<double> _filtersPanelAnimation;
 
   // Dados das localizações
   final List<LocalizacaoModel> _pontosTuristicos = [
@@ -302,11 +301,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> with TickerProviderStateM
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
-    );
-    
-    _filtersPanelAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
     );
   }
 
@@ -412,9 +406,53 @@ class _OpenStreetMapState extends State<OpenStreetMap> with TickerProviderStateM
     ];
   }
 
-  // Gera marcadores dinamicamente
-  List<Marker> _generateMarkers(List<LocalizacaoModel> locations, String type, Color color) {
-    return locations.map((location) {
+  // Retorna marcadores filtrados
+  List<Marker> getFilteredMarkers() {
+    List<LocalizacaoModel> filteredLocations = [];
+    
+    // Filtrar localizações com base na categoria selecionada
+    if (selectedFilter == 'Todos') {
+      filteredLocations = allLocations;
+    } else if (selectedFilter == 'Ponto Turístico') {
+      filteredLocations = _pontosTuristicos;
+    } else if (selectedFilter == 'Hotel') {
+      filteredLocations = _hoteis;
+    } else if (selectedFilter == 'Restaurante') {
+      filteredLocations = _restaurantes;
+    }
+    
+    // Aplicar filtro de busca por texto
+    if (_searchController.text.isNotEmpty) {
+      filteredLocations = filteredLocations.where((location) {
+        return location.nome.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+               location.descricao.toLowerCase().contains(_searchController.text.toLowerCase());
+      }).toList();
+    }
+    
+    // Gerar marcadores para as localizações filtradas
+    return filteredLocations.map((location) {
+      Color color;
+      IconData icon;
+      
+      // Definir cor e ícone com base na categoria
+      switch (location.categoria) {
+        case 'Ponto Turístico':
+          color = Colors.red;
+          icon = Icons.landscape;
+          break;
+        case 'Hotel':
+          color = Colors.blue;
+          icon = Icons.hotel;
+          break;
+        case 'Restaurante':
+          color = Colors.green;
+          icon = Icons.restaurant;
+          break;
+        default:
+          color = Colors.grey;
+          icon = Icons.location_on;
+      }
+      
       return Marker(
         point: LatLng(location.lat, location.lng),
         width: 50,
@@ -438,11 +476,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> with TickerProviderStateM
               border: Border.all(color: color, width: 2),
             ),
             child: Icon(
-              type == 'Ponto Turístico'
-                  ? Icons.landscape
-                  : type == 'Hotel'
-                      ? Icons.hotel
-                      : Icons.restaurant,
+              icon,
               color: color,
               size: 28,
             ),
@@ -469,25 +503,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> with TickerProviderStateM
         },
       ),
     );
-  }
-
-  // Retorna marcadores filtrados
-  List<Marker> getFilteredMarkers() {
-    List<Marker> allMarkers = [];
-    allMarkers.addAll(_generateMarkers(_pontosTuristicos, 'Ponto Turístico', Colors.red));
-    allMarkers.addAll(_generateMarkers(_hoteis, 'Hotel', Colors.blue));
-    allMarkers.addAll(_generateMarkers(_restaurantes, 'Restaurante', Colors.green));
-
-    // Aplicar filtros
-    List<Marker> filteredMarkers = allMarkers;
-
-    // Filtro por texto de busca
-    if (_searchController.text.isNotEmpty) {
-      // Este filtro não funcionará corretamente pois os marcadores não contêm informações
-      // Para implementar isso corretamente, precisaríamos de uma estrutura diferente
-    }
-    
-    return filteredMarkers;
   }
 
   // Aplica filtro ou abre perfil
@@ -537,37 +552,6 @@ class _OpenStreetMapState extends State<OpenStreetMap> with TickerProviderStateM
         onSelectImage: _selecionarImagem,
         onTakePhoto: _tirarFoto,
         onSendFeedback: _sendFeedback,
-      ),
-    );
-  }
-
-  // Diálogo para escolher fonte da imagem
-  void _showImageSourceDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Escolher fonte da imagem'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Galeria'),
-              onTap: () {
-                Navigator.pop(context);
-                _selecionarImagem();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Câmera'),
-              onTap: () {
-                Navigator.pop(context);
-                _tirarFoto();
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -755,6 +739,7 @@ class _OpenStreetMapState extends State<OpenStreetMap> with TickerProviderStateM
           PopupMenuButton<String>(
             onSelected: _applyFilter,
             itemBuilder: (context) => [
+              
               const PopupMenuItem(
                 value: 'Ponto Turístico',
                 child: Row(
